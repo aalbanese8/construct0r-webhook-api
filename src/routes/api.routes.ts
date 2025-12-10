@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { authenticate } from '../middleware/auth.js';
 import * as chatController from '../controllers/chat.controller.js';
 import * as transcriptionController from '../controllers/transcription.controller.js';
 import * as scraperController from '../controllers/scraper.controller.js';
@@ -12,11 +11,7 @@ const router = Router();
 // Configure multer for file uploads
 const upload = multer({ dest: 'uploads/' });
 
-// Webhook endpoint (public - no authentication required)
-router.post('/webhook/analyze', webhookController.webhookHandler);
-
-// All other API routes require authentication
-router.use(authenticate);
+// All routes are public (no authentication)
 
 // Chat endpoints
 router.post('/chat/completions', chatController.chatCompletionHandler);

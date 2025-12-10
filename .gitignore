@@ -39,6 +39,7 @@ renderer/
 build/
 assets/
 dist-scripts/
+backend/
 afterSign.cjs
 build-and-sign.sh
 build_standalone.sh

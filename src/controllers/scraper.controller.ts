@@ -1,8 +1,7 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
+import { Request, Response } from 'express';
 import * as scraperService from '../services/scraper.service.js';
 
-export const scrapeWebPageHandler = async (req: AuthRequest, res: Response) => {
+export const scrapeWebPageHandler = async (req: Request, res: Response) => {
   try {
     const { url, useJavaScript } = req.body;
 

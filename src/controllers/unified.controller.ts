@@ -1,12 +1,11 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
+import { Request, Response } from 'express';
 import * as transcriptionService from '../services/transcription.service.js';
 import * as instagramService from '../services/instagram.service.js';
 
 /**
  * Unified transcribe endpoint that handles YouTube, TikTok, and Instagram URLs
  */
-export const unifiedTranscribeHandler = async (req: AuthRequest, res: Response) => {
+export const unifiedTranscribeHandler = async (req: Request, res: Response) => {
   try {
     const { url } = req.body;
 

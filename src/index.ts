@@ -1,8 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import { env } from './config/env.js';
-import authRoutes from './routes/auth.routes.js';
-import projectRoutes from './routes/project.routes.js';
 import apiRoutes from './routes/api.routes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
@@ -22,8 +20,6 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
-app.use('/auth', authRoutes);
-app.use('/projects', projectRoutes);
 app.use('/api', apiRoutes);
 
 // Error handling

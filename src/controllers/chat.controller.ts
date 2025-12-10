@@ -1,8 +1,7 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
+import { Request, Response } from 'express';
 import * as openaiService from '../services/openai.service.js';
 
-export const chatCompletionHandler = async (req: AuthRequest, res: Response) => {
+export const chatCompletionHandler = async (req: Request, res: Response) => {
   try {
     const { message, history, contextSources, systemInstruction } = req.body;
 

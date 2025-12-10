@@ -1,9 +1,8 @@
-import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
+import { Request, Response } from 'express';
 import * as transcriptionService from '../services/transcription.service.js';
 import * as instagramService from '../services/instagram.service.js';
 
-export const transcribeYouTubeHandler = async (req: AuthRequest, res: Response) => {
+export const transcribeYouTubeHandler = async (req: Request, res: Response) => {
   try {
     const { url } = req.body;
 
@@ -24,7 +23,7 @@ export const transcribeYouTubeHandler = async (req: AuthRequest, res: Response) 
   }
 };
 
-export const transcribeAudioHandler = async (req: AuthRequest, res: Response) => {
+export const transcribeAudioHandler = async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Audio file is required' });
@@ -40,7 +39,7 @@ export const transcribeAudioHandler = async (req: AuthRequest, res: Response) =>
   }
 };
 
-export const extractInstagramHandler = async (req: AuthRequest, res: Response) => {
+export const extractInstagramHandler = async (req: Request, res: Response) => {
   try {
     const { url } = req.body;
 
