@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
-YouTube Audio Downloader using yt-dlp
-First tries to get auto-generated transcript, then falls back to audio download.
+Video Audio Downloader using yt-dlp
+Supports YouTube and TikTok URLs.
+
+For YouTube, tries in order:
+1. transcriptapi.com (fast, requires API key)
+2. youtube-transcript-api (free, auto-generated captions)
+3. Download audio + Whisper (fallback)
 """
 
 import sys
@@ -10,6 +15,8 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import urllib.request
+import urllib.error
 
 try:
     import yt_dlp
@@ -101,9 +108,62 @@ def compress_audio_if_needed(audio_path, max_size_mb=10):
     return audio_path
 
 
+def get_transcriptapi_transcript(video_url):
+    """
+    Try to get transcript from transcriptapi.com API
+
+    Returns:
+        tuple: (success: bool, title: str, transcript: str)
+    """
+    api_key = os.environ.get('TRANSCRIPTAPI_KEY')
+    if not api_key:
+        return False, None, None
+
+    try:
+        video_id = extract_video_id(video_url)
+        if not video_id:
+            return False, None, None
+
+        # Make API request
+        url = f"https://transcriptapi.com/api/v2/youtube/transcript?video_url={video_id}&format=json"
+        request = urllib.request.Request(
+            url,
+            headers={'Authorization': f'Bearer {api_key}'}
+        )
+
+        with urllib.request.urlopen(request, timeout=10) as response:
+            data = json.loads(response.read().decode())
+
+        # Extract transcript text from segments
+        if 'segments' in data:
+            transcript = ' '.join([segment['text'] for segment in data['segments']])
+        elif 'transcript' in data:
+            transcript = data['transcript']
+        else:
+            return False, None, None
+
+        # Get video title
+        title = data.get('title', 'Unknown Title')
+
+        # If title not in API response, get it from yt-dlp
+        if title == 'Unknown Title':
+            with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True}) as ydl:
+                info = ydl.extract_info(video_url, download=False)
+                title = info.get('title', 'Unknown Title')
+
+        return True, title, transcript
+
+    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, KeyError):
+        # API error, fall back to next method
+        return False, None, None
+    except Exception:
+        # Any other error, fall back
+        return False, None, None
+
+
 def get_auto_transcript(video_url):
     """
-    Try to get auto-generated transcript from YouTube
+    Try to get auto-generated transcript from YouTube using youtube-transcript-api
 
     Returns:
         tuple: (success: bool, title: str, transcript: str)
@@ -139,34 +199,57 @@ def get_auto_transcript(video_url):
 
 def download_youtube_audio(video_url, output_dir):
     """
-    Download audio from YouTube video
-    First tries to get auto-generated transcript (fast & free),
+    Download audio from YouTube or TikTok video
+    First tries to get auto-generated transcript (YouTube only - fast & free),
     then falls back to downloading audio for Whisper transcription.
 
     Args:
-        video_url: YouTube video URL
+        video_url: YouTube or TikTok video URL
         output_dir: Directory to save downloaded audio
 
     Returns:
         Dictionary with title and transcript/audio path
     """
     try:
-        # STEP 1: Try to get auto-generated transcript first
-        success, title, transcript = get_auto_transcript(video_url)
+        # STEP 1: Try transcriptapi.com first (YouTube only, requires API key)
+        # TikTok doesn't support transcript APIs, so skip for TikTok URLs
+        is_tiktok = 'tiktok.com' in video_url.lower()
 
-        if success:
-            # Auto-transcript found! Return immediately without downloading
-            result = {
-                "title": title,
-                "transcript": transcript,
-                "audio_path": None,  # No audio file needed
-                "source": "auto_transcript",
-                "url": video_url,
-            }
-            print(json.dumps(result))
-            return 0
+        if not is_tiktok:
+            # Try transcriptapi.com first
+            success, title, transcript = get_transcriptapi_transcript(video_url)
 
-        # STEP 2: No auto-transcript available, download audio for Whisper
+            if success:
+                # transcriptapi.com success! Return immediately
+                result = {
+                    "title": title,
+                    "transcript": transcript,
+                    "audio_path": None,
+                    "source": "transcriptapi",
+                    "url": video_url,
+                }
+                print(json.dumps(result))
+                return 0
+
+            # STEP 2: Fall back to youtube-transcript-api (free, auto-generated captions)
+            success, title, transcript = get_auto_transcript(video_url)
+
+            if success:
+                # Auto-transcript found! Return immediately without downloading
+                result = {
+                    "title": title,
+                    "transcript": transcript,
+                    "audio_path": None,
+                    "source": "youtube_transcript_api",
+                    "url": video_url,
+                }
+                print(json.dumps(result))
+                return 0
+        else:
+            # TikTok doesn't support transcript APIs
+            success, title, transcript = False, None, None
+
+        # STEP 3: No transcript APIs available (or TikTok), download audio for Whisper
         # Configure yt-dlp options (low quality optimized for speech transcription)
         ydl_opts = {
             'format': 'bestaudio/best',

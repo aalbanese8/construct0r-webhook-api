@@ -31,3 +31,23 @@ __pycache__/
 *.so
 *.egg
 *.egg-info/
+.env.notarization
+
+# Electron/Frontend files (not needed for webhook API)
+electron/
+renderer/
+build/
+assets/
+dist-scripts/
+afterSign.cjs
+build-and-sign.sh
+build_standalone.sh
+electron-builder.json
+
+# Electron-specific documentation
+ELECTRON_*.md
+EASY_BUILD.md
+DISTRIBUTION.md
+FRONTEND_INTEGRATION_COMPLETE.md
+EXTRACTION_FEATURES_FIXED.md
+USER_README.md

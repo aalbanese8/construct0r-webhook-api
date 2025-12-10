@@ -4,8 +4,8 @@ services:
     runtime: node
     region: oregon
     plan: free
-    buildCommand: npm ci --prefer-offline && pip3 install --break-system-packages yt-dlp instaloader youtube-transcript-api && npm run build
-    startCommand: node dist/index.js
+    buildCommand: npm ci --prefer-offline && pip3 install --break-system-packages -r requirements.txt && npm run build
+    startCommand: node dist/src/index.js
     buildFilter:
       paths:
         - src/**
@@ -19,6 +19,8 @@ services:
       - key: PORT
         value: 3001
       - key: OPENAI_API_KEY
+        sync: false
+      - key: TRANSCRIPTAPI_KEY
         sync: false
       - key: SUPABASE_URL
         sync: false

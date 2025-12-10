@@ -27,14 +27,18 @@ export const transcribeYouTubeVideo = async (videoUrl: string): Promise<{ title:
   let tempDir: string | null = null;
 
   try {
-    // Validate YouTube URL format
-    if (!videoUrl.includes('youtube.com') && !videoUrl.includes('youtu.be')) {
-      throw new Error('Invalid YouTube URL');
+    // Validate YouTube or TikTok URL format
+    const isYoutube = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
+    const isTikTok = videoUrl.includes('tiktok.com');
+
+    if (!isYoutube && !isTikTok) {
+      throw new Error('Invalid URL. Must be a YouTube or TikTok URL');
     }
 
     // Create temporary directory for downloads
     // Go up to project root (2 levels from dist/services/) then into uploads/
-    tempDir = path.join(__dirname, '..', '..', 'uploads', `youtube-${Date.now()}`);
+    const platform = isTikTok ? 'tiktok' : 'youtube';
+    tempDir = path.join(__dirname, '..', '..', 'uploads', `${platform}-${Date.now()}`);
     await fs.mkdir(tempDir, { recursive: true });
 
     // Call Python script to download YouTube audio
@@ -55,14 +59,15 @@ export const transcribeYouTubeVideo = async (videoUrl: string): Promise<{ title:
       throw new Error(output.error);
     }
 
-    // Check if transcript was already obtained from auto-generated captions
+    // Check if transcript was already obtained from transcript APIs
     let transcript: string;
     if (output.transcript) {
-      // Auto-transcript was found, use it directly (fast & free!)
-      console.log(`✅ Using auto-generated transcript for: ${output.title}`);
+      // Transcript was obtained from API (transcriptapi.com or youtube-transcript-api)
+      const source = output.source === 'transcriptapi' ? 'TranscriptAPI.com' : 'YouTube auto-captions';
+      console.log(`✅ Using ${source} for: ${output.title}`);
       transcript = output.transcript;
     } else if (output.audio_path) {
-      // No auto-transcript available, transcribe the downloaded audio file with Whisper
+      // No transcript API available, transcribe the downloaded audio file with Whisper
       console.log(`🎙️ Transcribing with Whisper API for: ${output.title}`);
       transcript = await transcribeAudioFile(output.audio_path);
     } else {

@@ -5,13 +5,17 @@ import * as chatController from '../controllers/chat.controller.js';
 import * as transcriptionController from '../controllers/transcription.controller.js';
 import * as scraperController from '../controllers/scraper.controller.js';
 import * as unifiedController from '../controllers/unified.controller.js';
+import * as webhookController from '../controllers/webhook.controller.js';
 
 const router = Router();
 
 // Configure multer for file uploads
 const upload = multer({ dest: 'uploads/' });
 
-// All API routes require authentication
+// Webhook endpoint (public - no authentication required)
+router.post('/webhook/analyze', webhookController.webhookHandler);
+
+// All other API routes require authentication
 router.use(authenticate);
 
 // Chat endpoints
