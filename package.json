@@ -3,13 +3,13 @@
   "productName": "Construct0r Webhook API",
   "version": "1.0.0",
   "description": "Webhook API for analyzing YouTube, Instagram, and TikTok videos with LANDR-specific insights",
-  "main": "dist/src/index.js",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "dev": "tsc -w",
     "build": "tsc && cp -r scripts dist/",
-    "start": "node dist/src/index.js",
-    "start:dev": "tsc && node dist/src/index.js",
+    "start": "node dist/index.js",
+    "start:dev": "tsc && node dist/index.js",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
