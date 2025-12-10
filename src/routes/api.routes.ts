@@ -13,6 +13,9 @@ const upload = multer({ dest: 'uploads/' });
 
 // All routes are public (no authentication)
 
+// Webhook endpoint for LANDR analysis
+router.post('/webhook/analyze', webhookController.webhookHandler);
+
 // Chat endpoints
 router.post('/chat/completions', chatController.chatCompletionHandler);
 
