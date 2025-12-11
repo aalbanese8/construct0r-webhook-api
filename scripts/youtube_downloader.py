@@ -117,7 +117,10 @@ def get_transcriptapi_transcript(video_url):
     """
     api_key = os.environ.get('TRANSCRIPTAPI_KEY')
     if not api_key:
+        print("TranscriptAPI key not found, skipping...", file=sys.stderr)
         return False, None, None
+
+    print(f"Trying TranscriptAPI for video: {video_url}", file=sys.stderr)
 
     try:
         video_id = extract_video_id(video_url)
@@ -135,15 +138,18 @@ def get_transcriptapi_transcript(video_url):
             data = json.loads(response.read().decode())
 
         # Extract transcript text from segments
-        if 'segments' in data:
-            transcript = ' '.join([segment['text'] for segment in data['segments']])
-        elif 'transcript' in data:
-            transcript = data['transcript']
+        if 'transcript' in data:
+            # transcript is an array of {start, text} objects
+            if isinstance(data['transcript'], list):
+                transcript = ' '.join([segment['text'] for segment in data['transcript']])
+            else:
+                # If it's already a string (text format)
+                transcript = data['transcript']
         else:
             return False, None, None
 
-        # Get video title
-        title = data.get('title', 'Unknown Title')
+        # Get video title from metadata if available
+        title = data.get('metadata', {}).get('title', None) or data.get('title', 'Unknown Title')
 
         # If title not in API response, get it from yt-dlp
         if title == 'Unknown Title':
@@ -153,11 +159,18 @@ def get_transcriptapi_transcript(video_url):
 
         return True, title, transcript
 
-    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, KeyError):
-        # API error, fall back to next method
+    except urllib.error.HTTPError as e:
+        # Log HTTP errors for debugging
+        error_body = e.read().decode() if hasattr(e, 'read') else str(e)
+        print(f"TranscriptAPI HTTP Error {e.code}: {error_body}", file=sys.stderr)
         return False, None, None
-    except Exception:
+    except (urllib.error.URLError, json.JSONDecodeError, KeyError) as e:
+        # API error, fall back to next method
+        print(f"TranscriptAPI Error: {type(e).__name__}: {e}", file=sys.stderr)
+        return False, None, None
+    except Exception as e:
         # Any other error, fall back
+        print(f"TranscriptAPI Unexpected Error: {e}", file=sys.stderr)
         return False, None, None
 
 
