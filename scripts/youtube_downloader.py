@@ -127,42 +127,44 @@ def get_transcriptapi_transcript(video_url):
         if not video_id:
             return False, None, None
 
-        # Make API request
-        url = f"https://transcriptapi.com/api/v2/youtube/transcript?video_url={video_id}&format=json"
+        # Make API request - exactly as documented
+        url = f"https://transcriptapi.com/api/v2/youtube/transcript?video_url={video_id}"
         request = urllib.request.Request(
             url,
             headers={'Authorization': f'Bearer {api_key}'}
         )
 
+        print(f"TranscriptAPI request: GET {url}", file=sys.stderr)
+
         with urllib.request.urlopen(request, timeout=10) as response:
             data = json.loads(response.read().decode())
 
-        # Extract transcript text from segments
-        if 'transcript' in data:
-            # transcript is an array of {start, text} objects
-            if isinstance(data['transcript'], list):
-                transcript = ' '.join([segment['text'] for segment in data['transcript']])
-            else:
-                # If it's already a string (text format)
-                transcript = data['transcript']
-        else:
+        print(f"TranscriptAPI response received for video_id: {data.get('video_id')}", file=sys.stderr)
+
+        # Extract transcript text from array
+        # Response format: {"video_id": "...", "language": "en", "transcript": [{text, start, duration}, ...]}
+        if 'transcript' not in data or not isinstance(data['transcript'], list):
+            print(f"Invalid response format: {data}", file=sys.stderr)
             return False, None, None
 
-        # Get video title from metadata if available
-        title = data.get('metadata', {}).get('title', None) or data.get('title', 'Unknown Title')
+        # Combine all transcript segments
+        transcript = ' '.join([segment['text'] for segment in data['transcript']])
 
-        # If title not in API response, get it from yt-dlp
-        if title == 'Unknown Title':
-            with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True}) as ydl:
-                info = ydl.extract_info(video_url, download=False)
-                title = info.get('title', 'Unknown Title')
+        # TranscriptAPI doesn't return title
+        # Use video_id as title to avoid hitting YouTube's bot detection
+        title = f"YouTube Video {video_id}"
 
+        print(f"✅ TranscriptAPI success! Got transcript ({len(data['transcript'])} segments)", file=sys.stderr)
         return True, title, transcript
 
     except urllib.error.HTTPError as e:
         # Log HTTP errors for debugging
-        error_body = e.read().decode() if hasattr(e, 'read') else str(e)
-        print(f"TranscriptAPI HTTP Error {e.code}: {error_body}", file=sys.stderr)
+        try:
+            error_body = e.read().decode()
+            print(f"❌ TranscriptAPI HTTP {e.code} Error:", file=sys.stderr)
+            print(f"   Response: {error_body}", file=sys.stderr)
+        except:
+            print(f"❌ TranscriptAPI HTTP {e.code} Error: {str(e)}", file=sys.stderr)
         return False, None, None
     except (urllib.error.URLError, json.JSONDecodeError, KeyError) as e:
         # API error, fall back to next method
