@@ -57,8 +57,8 @@ export const webhookHandler = async (req: Request, res: Response) => {
 
     // Step 1: Download and transcribe based on platform
     if (platform === 'youtube' || platform === 'tiktok') {
-      // yt-dlp handles both YouTube and TikTok URLs
-      console.log(`[Webhook] Downloading ${platform} video...`);
+      // Tries: TranscriptAPI.com → YouTube Transcript API → yt-dlp download
+      console.log(`[Webhook] Transcribing ${platform} video (trying transcript APIs first)...`);
       const result = await transcribeYouTubeVideo(url);
       title = result.title;
       transcript = result.transcript;

@@ -44,11 +44,16 @@ export const transcribeYouTubeVideo = async (videoUrl: string): Promise<{ title:
     // Call Python script to download YouTube audio
     // Scripts are in dist/scripts/ (one level up from dist/services/)
     const scriptPath = path.join(__dirname, '..', 'scripts', 'youtube_downloader.py');
-    const command = `python3 "${scriptPath}" "${videoUrl}" "${tempDir}" 2>/dev/null`;
+    const command = `python3 "${scriptPath}" "${videoUrl}" "${tempDir}"`;
 
-    const { stdout } = await execAsync(command, {
+    const { stdout, stderr } = await execAsync(command, {
       timeout: 300000, // 5 minute timeout (for long videos + compression)
     });
+
+    // Log Python stderr for debugging
+    if (stderr) {
+      console.log('[Python Debug]', stderr);
+    }
 
     // Parse the output from Python script (only the last line should be JSON)
     const lines = stdout.trim().split('\n');
